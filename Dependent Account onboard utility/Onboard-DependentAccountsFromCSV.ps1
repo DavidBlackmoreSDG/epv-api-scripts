@@ -426,8 +426,8 @@ Function Get-LogonHeaderBAD
 
 
 Function Get-LogonHeader {
-    <# 
-.SYNOPSIS 
+    <#
+.SYNOPSIS
 	Get-LogonHeader
 .DESCRIPTION
 	Get-LogonHeader
@@ -442,13 +442,13 @@ Function Get-LogonHeader {
         [Parameter(Mandatory = $false)]
         [boolean]$concurrentSession
     )
-	
+
     if ([string]::IsNullOrEmpty($g_LogonHeader)) {
         # Disable SSL Verification to contact PVWA
         If ($DisableSSLVerify) {
             Disable-SSLVerification
         }
-		
+
         # Create the POST Body for the Logon
         # ----------------------------------
         If ($concurrentSession) {
@@ -461,11 +461,11 @@ Function Get-LogonHeader {
         # Check if we need to add RADIUS OTP
         If (![string]::IsNullOrEmpty($RadiusOTP)) {
             $logonBody.Password += ",$RadiusOTP"
-        } 
+        }
         try {
             # Logon
             $logonToken = Invoke-RestMethod -Method Post -Uri $URL_Logon -Body $logonBody -ContentType "application/json" -TimeoutSec 2700
-			
+
             # Clear logon body
             $logonBody = ""
         }
@@ -477,13 +477,13 @@ Function Get-LogonHeader {
         If ([string]::IsNullOrEmpty($logonToken)) {
             Throw "Get-LogonHeader: Logon Token is Empty - Cannot login"
         }
-		
+
         try {
             # Create a Logon Token Header (This will be used through out all the script)
             # ---------------------------
             $logonHeader = @{Authorization = $logonToken }
 
-            Set-Variable -Name g_LogonHeader -Value $logonHeader -Scope global		
+            Set-Variable -Name g_LogonHeader -Value $logonHeader -Scope global
         }
         catch {
             Throw $(New-Object System.Exception ("Get-LogonHeader: Could not create Logon Headers Dictionary", $_.Exception))
@@ -492,8 +492,8 @@ Function Get-LogonHeader {
 }
 
 Function Invoke-Logoff {
-    <# 
-.SYNOPSIS 
+    <#
+.SYNOPSIS
 	Invoke-Logoff
 .DESCRIPTION
 	Logoff a PVWA session
@@ -515,16 +515,16 @@ Function Invoke-Logoff {
 Function Add-AccountDependency
 {
 	param ($dependencyObject, $MasterID)
-	
+
 	try{
 		$retResult = $false
 		if($null -ne $MasterID)
 		{
-			$accountDetails = $(Invoke-Rest -Uri ($URL_AccountsDetails -f $MasterID) -Header $global:g_LogonHeader-Command "GET")
+			$accountDetails = $(Invoke-Rest -Uri ($URL_AccountsDetails -f $MasterID) -Header $global:g_LogonHeader -Command "GET")
 		}
 		$addDiscoveredAccountBody = @{
-			"userName"=$dependencyObject.userName; 
-			"address"=$dependencyObject.address; 
+			"userName"=$dependencyObject.userName;
+			"address"=$dependencyObject.address;
 			"domain"=$dependencyObject.domain;
 			"discoveryDateTime"=ConvertTo-EPOCHDate (Get-Date);
 		    "accountEnabled"=$true;
@@ -541,9 +541,9 @@ Function Add-AccountDependency
 		If($null -ne $accountDetails)
 		{
 			# Verify details and complete missing ones
-			if($accountDetails.useName -ne $dependencyObject.userName)
+			if($accountDetails.userName -ne $dependencyObject.userName)
 			{
-				$addDiscoveredAccountBody.userName = $accountDetails.useName
+				$addDiscoveredAccountBody.userName = $accountDetails.userName
 			}
 			if($accountDetails.address -ne $dependencyObject.address)
 			{
@@ -693,18 +693,18 @@ try {
 	If (![string]::IsNullOrEmpty($logonToken)) {
 		if ($logonToken.GetType().name -eq "String") {
 			$logonHeader = @{Authorization = $logonToken }
-			Set-Variable -Name g_LogonHeader -Value $logonHeader -Scope global	
+			Set-Variable -Name g_LogonHeader -Value $logonHeader -Scope global
 		}
 		else {
 			Set-Variable -Name g_LogonHeader -Value $logonToken -Scope global
 		}
 	}
 	elseif ($null -eq $creds) {
-		$msg = "Enter your User name and Password"; 
+		$msg = "Enter your User name and Password";
 		$creds = $Host.UI.PromptForCredential($caption, $msg, "", "")
 		Get-LogonHeader -Credentials $creds -concurrentSession $concurrentSession
 	}
-	else { 
+	else {
 		Write-LogMessage -Type Error -Msg "No Credentials were entered"
 		return
 	}
@@ -734,7 +734,7 @@ catch {
 			# Search for Master Account
 			$foundMasterAccount = $null
 			try {
-				$foundMasterAccount = (Find-MasterAccount -accountName $account.userName -accountAddress $account.address).id
+				$foundMasterAccount = (Find-MasterAccount -accountName $account.userName -accountAddress $account.address)
 			} catch {
 				Write-LogMessage -Type Error -Msg "Error searching for Master Account. Error: $(Join-ExceptionMessage $_.Exception)"
 			}
@@ -764,7 +764,7 @@ catch {
 	else {
 		Invoke-Logoff
 	}
-	
+
 	# Footer
 	Write-LogMessage -Type Info -MSG "Vaulted ${counter} out of ${rowCount} dependent accounts successfully." -Footer
 #endregion
